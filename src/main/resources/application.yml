@@ -1,0 +1,7 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:D:/Program Files (x86)/AnyTXT Searcher/config.db
+    driver-class-name: org.sqlite.JDBC
+  freemarker:
+    cache: true
+    template-loader-path: classpath:/templates/

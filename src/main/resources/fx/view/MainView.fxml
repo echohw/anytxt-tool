@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.Pane?>
+
+<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.anytxttool.controller.MainController">
+  <children>
+      <TextArea layoutX="86.0" layoutY="43.0" prefHeight="33.0" prefWidth="427.0" />
+      <Button fx:id="btn" layoutX="523.0" layoutY="50.0" mnemonicParsing="false" onAction="#btnClick" text="Button" />
+      <ImageView fitHeight="150.0" fitWidth="200.0" layoutX="86.0" layoutY="125.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@/static/skr.jpg" />
+         </image>
+      </ImageView>
+  </children>
+</Pane>
