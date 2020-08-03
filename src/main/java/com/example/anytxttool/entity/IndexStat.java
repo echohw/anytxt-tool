@@ -10,8 +10,8 @@ public class IndexStat {
 
     public static final String TABLE = "IndexStat";
 
-    private Long rowId;
-    private Long id;
+    private Integer rowId;
+    private Integer id;
     private String ext;
     private Integer stat;
     private Integer total;

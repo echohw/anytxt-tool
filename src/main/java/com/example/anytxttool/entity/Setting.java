@@ -10,7 +10,7 @@ public class Setting {
 
     public static final String TABLE = "Setting";
 
-    private Long rowId;
+    private Integer rowId;
     private String key;
     private String value;
 }

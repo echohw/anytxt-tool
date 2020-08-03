@@ -2,6 +2,7 @@ package com.example.anytxttool.manager;
 
 import com.example.anytxttool.entity.Setting;
 import com.example.devutils.utils.jdbc.JdbcUtils;
+import java.sql.Types;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -17,17 +18,17 @@ public class SettingManager {
     @Autowired
     private JdbcUtils jdbcUtils;
 
-    public int updateByRowId(long rowId, String value) {
-        String sql = String.format("update %s set value = %s where rowid = %s", Setting.TABLE, value, rowId);
-        return jdbcUtils.update(sql);
+    public int updateByRowId(int rowId, String value) {
+        String sql = String.format("update %s set value = ? where rowid = %s", Setting.TABLE, rowId);
+        return jdbcUtils.update(sql, new Object[]{value}, new int[]{Types.VARCHAR});
     }
 
     public int updateByKey(String key, String value) {
-        String sql = String.format("update %s set value = %s where key = %s", Setting.TABLE, value, Objects.requireNonNull(key));
-        return jdbcUtils.update(sql);
+        String sql = String.format("update %s set value = ? where key = ?", Setting.TABLE);
+        return jdbcUtils.update(sql, new Object[]{Objects.requireNonNull(key), value}, new int[]{Types.VARCHAR, Types.VARCHAR});
     }
 
-    public Optional<Setting> getByRowId(long rowId) {
+    public Optional<Setting> getByRowId(int rowId) {
         String sql = String.format("select rowid, key, value from %s where rowid = %s", Setting.TABLE, rowId);
         return jdbcUtils.selectRow(sql, Setting.class);
     }

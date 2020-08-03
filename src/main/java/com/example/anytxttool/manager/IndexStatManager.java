@@ -35,7 +35,7 @@ public class IndexStatManager {
             keyHolder
         );
         Optional.ofNullable(keyHolder.getKey()).ifPresent(key -> {
-            long autoId = key.longValue();
+            int autoId = key.intValue();
             indexStat.setRowId(autoId);
             indexStat.setId(autoId);
         });
@@ -47,7 +47,7 @@ public class IndexStatManager {
         return indexStats;
     }
 
-    public int deleteByRowId(long rowId, boolean trueDel) {
+    public int deleteByRowId(int rowId, boolean trueDel) {
         if (trueDel) {
             String sql = String.format("delete from %s where rowid = %s", IndexStat.TABLE, rowId);
             return jdbcUtils.delete(sql);
@@ -57,7 +57,7 @@ public class IndexStatManager {
         }
     }
 
-    public int deleteById(long id, boolean trueDel) {
+    public int deleteById(int id, boolean trueDel) {
         if (trueDel) {
             String sql = String.format("delete from %s where id = %s", IndexStat.TABLE, id);
             return jdbcUtils.delete(sql);
@@ -69,11 +69,11 @@ public class IndexStatManager {
 
     public int deleteByExt(String extName, boolean trueDel) {
         if (trueDel) {
-            String sql = String.format("delete from %s where ext = %s", IndexStat.TABLE, Objects.requireNonNull(extName));
-            return jdbcUtils.delete(sql);
+            String sql = String.format("delete from %s where ext = ?", IndexStat.TABLE);
+            return jdbcUtils.delete(sql, new Object[]{Objects.requireNonNull(extName)}, new int[]{Types.VARCHAR});
         } else {
-            String sql = String.format("update %s set stat = %s where ext = %s", IndexStat.TABLE, EntityStat.DELETED.getCoordinate(), Objects.requireNonNull(extName));
-            return jdbcUtils.update(sql);
+            String sql = String.format("update %s set stat = %s where ext = ?", IndexStat.TABLE, EntityStat.DELETED.getCoordinate());
+            return jdbcUtils.update(sql, new Object[]{Objects.requireNonNull(extName)}, new int[]{Types.VARCHAR});
         }
     }
 
@@ -98,42 +98,37 @@ public class IndexStatManager {
         }
     }
 
-    public void truncate() {
-        String sql = String.format("truncate %s", IndexStat.TABLE);
-        jdbcUtils.execute(sql);
-    }
-
-    public int updateByRowId(IndexStat indexStat) {
-        String preparedSql = String.format("update %s set id = ?, ext = ?, stat = ?, total = ?, rule = ? where rowid = %s", IndexStat.TABLE, Objects.requireNonNull(indexStat.getRowId()));
-        Object[] args = {indexStat.getId(), indexStat.getExt(), indexStat.getStat(), indexStat.getTotal(), indexStat.getRule()};
-        int[] argTypes = {Types.BIGINT, Types.VARCHAR, Types.INTEGER, Types.INTEGER, Types.VARCHAR};
+    public int updateById(IndexStat indexStat) {
+        String preparedSql = String.format("update %s set ext = ?, stat = ?, total = ?, rule = ? where id = %s", IndexStat.TABLE, Objects.requireNonNull(indexStat.getId()));
+        Object[] args = {indexStat.getExt(), indexStat.getStat(), indexStat.getTotal(), indexStat.getRule()};
+        int[] argTypes = {Types.VARCHAR, Types.INTEGER, Types.INTEGER, Types.VARCHAR};
         return jdbcUtils.update(preparedSql, args, argTypes);
     }
 
-    public int updateSelectiveByRowId(IndexStat indexStat) {
-        LinkedHashMap<String, Object> setFields = MapUtils.of(LinkedHashMap::new, "id", indexStat.getId(), "ext", indexStat.getExt(), "stat", indexStat.getStat(), "total", indexStat.getTotal(), "rule", indexStat.getRule());
+    public int updateSelectiveById(IndexStat indexStat) {
+        LinkedHashMap<String, Object> setFields = MapUtils.of(LinkedHashMap::new, "ext", indexStat.getExt(), "stat", indexStat.getStat(), "total", indexStat.getTotal(), "rule", indexStat.getRule());
         List<Object> argList = new ArrayList<>();
         String setClause = setFields.entrySet().stream().filter(entry -> entry.getValue() != null).map(entry -> {
                 argList.add(entry.getValue());
                 return entry.getKey() + " = ?";
             }).collect(Collectors.joining(","));
-        String preparedSql = String.format("update %s set %s where rowid = %s", IndexStat.TABLE, setClause, Objects.requireNonNull(indexStat.getRowId()));
+        String preparedSql = String.format("update %s set %s where id = %s", IndexStat.TABLE, setClause, Objects.requireNonNull(indexStat.getId()));
         return jdbcUtils.jdbcTemplate().update(preparedSql, argList.toArray());
     }
 
-    public Optional<IndexStat> getByRowId(long rowId) {
+    public Optional<IndexStat> getByRowId(int rowId) {
         String sql = String.format("select rowid, id, ext, stat, total, rule from %s where rowid = %s", IndexStat.TABLE, rowId);
         return jdbcUtils.selectRow(sql, IndexStat.class);
     }
 
-    public Optional<IndexStat> getById(long id) {
+    public Optional<IndexStat> getById(int id) {
         String sql = String.format("select rowid, id, ext, stat, total, rule from %s where id = %s",IndexStat.TABLE, id);
         return jdbcUtils.selectRow(sql, IndexStat.class);
     }
 
     public Optional<IndexStat> getByExt(String extName) {
-        String sql = String.format("select rowid, id, ext, stat, total, rule from %s where ext = %s", IndexStat.TABLE, Objects.requireNonNull(extName));
-        return jdbcUtils.selectRow(sql, IndexStat.class);
+        String sql = String.format("select rowid, id, ext, stat, total, rule from %s where ext = ?", IndexStat.TABLE);
+        return jdbcUtils.selectRow(sql, new Object[]{Objects.requireNonNull(extName)}, new int[]{Types.VARCHAR}, IndexStat.class);
     }
 
     public List<IndexStat> getAllByStatIn(int... stat) {

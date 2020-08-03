@@ -21,7 +21,7 @@ public class ToolConfigManager {
         ".java", ".py", ".php", ".sql", ".scala", ".go", ".html", ".js", ".css", ".vue", ".sh",
         ".lua", ".vue", ".json", ".xml", ".yml", ".log", ".md", ".ini"
     );
-    private List<String> scanDirList = Arrays.stream(File.listRoots()).map(File::getAbsolutePath).collect(Collectors.toList());
+    private List<String> scanPathList = Arrays.stream(File.listRoots()).map(File::getAbsolutePath).collect(Collectors.toList());
     private List<String> ignoreDirRegexList = Arrays.asList(
         "^C:",
         ".*(?:/|\\\\)\\.idea$",
@@ -36,8 +36,8 @@ public class ToolConfigManager {
         return Stream.of(defaultFileTypeList, extFileTypeList).flatMap(List::stream).distinct().collect(Collectors.toList());
     }
 
-    public List<String> getScanDirList() {
-        return scanDirList;
+    public List<String> getScanPathList() {
+        return scanPathList;
     }
 
     public List<String> getIgnoreDirRegexList() {
