@@ -19,7 +19,7 @@ public class ToolConfigManager {
     );
     private List<String> extFileTypeList = Arrays.asList(
         ".java", ".py", ".php", ".sql", ".scala", ".go", ".html", ".js", ".css", ".vue", ".sh",
-        ".lua", ".vue", ".json", ".xml", ".yml", ".log", ".md", ".ini"
+        ".lua", ".json", ".xml", ".yml", ".log", ".md", ".ini"
     );
     private List<String> scanPathList = Arrays.stream(File.listRoots()).map(File::getAbsolutePath).collect(Collectors.toList());
     private List<String> ignoreDirRegexList = Arrays.asList(
