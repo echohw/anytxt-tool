@@ -10,6 +10,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,6 +19,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ToolConfigManager {
+
+    private static final Logger logger = LoggerFactory.getLogger(ToolConfigManager.class);
 
     private List<String> defaultFileTypeList = Arrays.asList(
         ".pdf", ".doc", ".ppt", ".xls", ".docx", ".pptx", ".xlsx", ".chm", ".mobi", ".epub", ".fb2",
@@ -28,19 +32,28 @@ public class ToolConfigManager {
     );
     private List<String> scanPathList = Arrays.stream(File.listRoots()).map(File::getAbsolutePath).collect(Collectors.toList());
     private List<String> ignoreDirRegexList = Arrays.asList(
-        getDesktopDirRegex(),
         ".*(?:/|\\\\)\\.idea$",
         ".*(?:/|\\\\)\\.gradle$",
         ".*(?:/|\\\\)\\.git$",
         ".*(?:/|\\\\)\\.github$",
         ".*(?:/|\\\\)\\.svn$",
-        ".*(?:/|\\\\)node_modules$"
+        ".*(?:/|\\\\)node_modules$",
+        getDisIgnorePathRegex() // 必须放在最后
     );
 
-    public String getDesktopDirRegex() {
+    public static String getDisIgnorePathRegex() {
         Path desktopPath = PathUtils.getDesktopPath();
-        ArrayList<Path> desktopPathList = CollectionUtils.flat(ArrayList::new, PathUtils.getAllParentPath(desktopPath), Collections.singletonList(desktopPath));
-        return "^(?:(?!" + desktopPathList.stream().map(path -> "(?:" + path.toString().replace("\\", "\\\\") + "$)").collect(Collectors.joining("|")) + ").*)$";
+        Path systemDrive = PathUtils.getSystemDrive();
+        ArrayList<String> desktopPathList = CollectionUtils.flat(ArrayList::new,
+            PathUtils.getAllParentPath(desktopPath).stream().map(Path::toString).collect(Collectors.toList()),
+            Collections.singletonList(desktopPath.toString() + ".*")
+        );
+        List<String> otherRootDrivePathList = Arrays.stream(File.listRoots()).map(File::toPath).filter(path -> !path.equals(systemDrive)).map(path -> path.toString() + ".*").collect(Collectors.toList());
+        ArrayList<String> disIgnorePathRegexList = CollectionUtils.flat(ArrayList::new, desktopPathList, otherRootDrivePathList); // 不忽略桌面路径及其他磁盘路径
+        // ^(?:(?!(?:C:\\$)|(?:C:\\Users$)|(?:C:\\Users\\Administrator$)|(?:C:\\Users\\Administrator\\Desktop$)).*)$
+        String regex = "^(?:(?!" + disIgnorePathRegexList.stream().map(path -> "(?:" + path.replace("\\", "\\\\") + "$)").collect(Collectors.joining("|")) + ").*)$";
+        logger.info("不忽略路径的正则: {}", regex);
+        return regex;
     }
 
     public List<String> getFileTypeList() {

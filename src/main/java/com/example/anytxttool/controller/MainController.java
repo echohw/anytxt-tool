@@ -137,6 +137,7 @@ public class MainController implements Initializable {
         buttonType.ifPresent(btnType -> {
             if (btnType.equals(okBtn)) {
                 anytxtToolService.deleteIndexStatByIdIn(indexStatVOList.stream().map(IndexStatVO::getId).collect(Collectors.toList()));
+                batchChoiceCheckBox.setSelected(false);
                 this.refresh();
             }
         });
@@ -145,6 +146,7 @@ public class MainController implements Initializable {
     @FXML
     public void refresh() {
         this.initTableView();
+        batchChoiceCheckBox.setSelected(false);
     }
 
     @Override

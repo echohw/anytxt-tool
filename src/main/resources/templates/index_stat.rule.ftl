@@ -5,7 +5,7 @@
     <m_ruleType>${ruleType!0}</m_ruleType>
     <m_qslPaths class_id="1" tracking_level="0" version="0">
       <stdList class_id="2" tracking_level="0" version="0">
-        <count>${count!0}</count>
+        <count>${count?c!0}</count>
         <item_version>${version!0}</item_version>
         <#if dirList??>
           <#list dirList as dir>

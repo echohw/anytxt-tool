@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -27,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -68,6 +69,17 @@ public class AnytxtToolApplicationTests {
     }
 
     @Test
+    public void testRenderRuleFtl() throws IOException, TemplateException {
+        RuleFtlDataModel dataModel = new RuleFtlDataModel();
+        dataModel.setVersion(0);
+        dataModel.setCount(1001);
+        dataModel.setRuleType(RuleType.EXCLUDE_DIR.getCoord());
+        dataModel.setDirList(Collections.emptyList());
+        String ruleFtl = anytxtToolService.renderRuleFtl(dataModel);
+        System.out.println(ruleFtl);
+    }
+
+    @Test
     public void testResetIndexStat() throws IOException, TemplateException {
         Consumer<Path> scannedDirConsumer = path -> {
             scannedDirList.add(path.toString());
@@ -92,7 +104,7 @@ public class AnytxtToolApplicationTests {
             },
             filePath -> {},
             (path, ex) -> {
-                logger.error("{}", ex);
+                // logger.error("{}", ex);
                 ignoredDirConsumer.accept(path, new RuntimeException("目录访问受限", ex));
                 return FileVisitResult.SKIP_SUBTREE;
             }
