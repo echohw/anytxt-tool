@@ -10,7 +10,6 @@ public class IndexStat {
 
     public static final String TABLE = "IndexStat";
 
-    private Integer rowId;
     private Integer id;
     private String ext;
     private Integer stat;

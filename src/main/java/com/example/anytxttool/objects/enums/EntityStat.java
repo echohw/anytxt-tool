@@ -1,5 +1,8 @@
 package com.example.anytxttool.objects.enums;
 
+import java.util.Optional;
+import java.util.function.Predicate;
+
 /**
  * Created by AMe on 2020-08-02 15:23.
  */
@@ -10,18 +13,18 @@ public enum EntityStat {
     COMPLETED(4, "COMPLETED", "完成"),
     DELETED(5, "DELETED", "移除");
 
-    private int coordinate;
+    private int coord;
     private String name;
     private String displayName;
 
-    EntityStat(int coordinate, String name, String displayName) {
-        this.coordinate = coordinate;
+    EntityStat(int coord, String name, String displayName) {
+        this.coord = coord;
         this.name = name;
         this.displayName = displayName;
     }
 
-    public int getCoordinate() {
-        return this.coordinate;
+    public int getCoord() {
+        return this.coord;
     }
 
     public String getName() {
@@ -30,5 +33,14 @@ public enum EntityStat {
 
     public String getDisplayName() {
         return this.displayName;
+    }
+
+    public static Optional<EntityStat> find(Predicate<EntityStat> entityStatPredicate) {
+        for (EntityStat entityStat : EntityStat.values()) {
+            if (entityStatPredicate.test(entityStat)) {
+                return Optional.of(entityStat);
+            }
+        }
+        return Optional.empty();
     }
 }

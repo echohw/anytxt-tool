@@ -3,6 +3,7 @@ package com.example.anytxttool.service;
 import com.example.anytxttool.entity.IndexStat;
 import com.example.anytxttool.manager.IndexStatManager;
 import com.example.anytxttool.objects.RuleFtlDataModel;
+import com.example.anytxttool.objects.enums.RuleType;
 import com.example.devutils.dep.Charsets;
 import com.example.devutils.dep.MyFileVisitor;
 import com.example.devutils.utils.io.DirectoryUtils;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -46,8 +48,16 @@ public class AnytxtToolService {
         indexStatManager.deleteAll(true);
     }
 
+    public void deleteIndexStatByIdIn(List<Integer> idList) {
+        idList.forEach(id -> indexStatManager.deleteById(id, true));
+    }
+
     public void addAllIndexStat(List<IndexStat> indexStatList) {
         indexStatManager.addAll(indexStatList);
+    }
+
+    public List<IndexStat> getAllIndexStat() {
+        return indexStatManager.getAll();
     }
 
     public IndexStat assembleIndexStat(String ext, int stat, int total, String rule) {
@@ -64,6 +74,10 @@ public class AnytxtToolService {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         template.process(dataModel, new OutputStreamWriter(byteArrayOutputStream, Charsets.UTF_8));
         return new String(byteArrayOutputStream.toByteArray(), Charsets.UTF_8);
+    }
+
+    public RuleFtlDataModel parseRuleXml(String ruleXml) { // TODO
+        return new RuleFtlDataModel(RuleType.EXCLUDE_DIR.getCoord(), 0, 0, Arrays.asList());
     }
 
 }

@@ -1,19 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.ChoiceBox?>
-<?import javafx.scene.control.ListView?>
-<?import javafx.scene.control.TextArea?>
-<?import javafx.scene.layout.AnchorPane?>
-
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="523.0" prefWidth="764.0" xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.anytxttool.controller.MainController">
-  <children>
-    <Button fx:id="startScanBtn" layoutX="608.0" layoutY="42.0" mnemonicParsing="false" onAction="#startScan" prefHeight="22.0" prefWidth="76.0" text="开始扫描" />
-    <ListView fx:id="ignoreDirRegexListView" layoutX="265.0" layoutY="14.0" prefHeight="200.0" prefWidth="118.0" />
-    <TextArea fx:id="ignoredDirTextArea" layoutX="14.0" layoutY="400.0" prefHeight="109.0" prefWidth="738.0" />
-      <ListView fx:id="fileTypeListView" layoutX="139.0" layoutY="14.0" prefHeight="200.0" prefWidth="76.0" />
-      <ListView fx:id="scanPathListView" layoutX="23.0" layoutY="14.0" prefHeight="200.0" prefWidth="76.0" />
-      <ChoiceBox fx:id="ruleTypeChoiceBox" layoutX="588.0" layoutY="103.0" prefHeight="22.0" prefWidth="129.0" />
-      <Button fx:id="resetIndexStatBtn" layoutX="608.0" layoutY="157.0" mnemonicParsing="false" onAction="#resetIndexStat" text="配置文件索引" />
-  </children>
-</AnchorPane>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<BorderPane maxHeight="600.0" maxWidth="900.0" minHeight="600.0" minWidth="900.0" prefHeight="600.0"
+  prefWidth="900.0" stylesheets="@../css/MainView.css" xmlns="http://javafx.com/javafx/8.0.172-ea"
+  xmlns:fx="http://javafx.com/fxml/1"
+  fx:controller="com.example.anytxttool.controller.MainController">
+  <center>
+    <TableView fx:id="indexStatTableView" editable="true" prefWidth="200.0"
+      BorderPane.alignment="CENTER">
+      <columns>
+        <TableColumn fx:id="checkTableCol" prefWidth="75.0" sortable="false">
+          <graphic>
+            <CheckBox fx:id="batchChoiceCheckBox" mnemonicParsing="false" onAction="#batchChoice"/>
+          </graphic>
+        </TableColumn>
+        <TableColumn id="order" fx:id="orderTableCol" prefWidth="75.0" text="序号"/>
+        <TableColumn id="ext" fx:id="extTableCol" prefWidth="109.0" text="文件类型"/>
+        <TableColumn id="stat" fx:id="statTableCol" prefWidth="41.0" sortable="false" text="状态"/>
+        <TableColumn id="total" fx:id="totalTableCol" prefWidth="75.0" text="数量"/>
+        <TableColumn id="rule" fx:id="ruleTableCol" prefWidth="130.0" sortable="false" text="索引规则"/>
+        <TableColumn id="opt" fx:id="optTableCol" prefWidth="200.0" sortable="false" text="操作"/>
+      </columns>
+    </TableView>
+  </center>
+  <top>
+    <HBox alignment="CENTER_LEFT" spacing="2.0" BorderPane.alignment="CENTER">
+      <children>
+        <Button fx:id="filterBtn" mnemonicParsing="false" onAction="#filterItem" text="筛选"/>
+        <Button fx:id="newBtn" mnemonicParsing="false" onAction="#newItem" text="新增"/>
+        <Button fx:id="delBtn" mnemonicParsing="false" onAction="#delItems" text="删除"/>
+        <Button fx:id="refreshBtn" mnemonicParsing="false" onAction="#refresh" text="刷新列表"/>
+      </children>
+    </HBox>
+  </top>
+</BorderPane>

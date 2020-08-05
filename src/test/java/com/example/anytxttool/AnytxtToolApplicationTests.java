@@ -1,7 +1,9 @@
 package com.example.anytxttool;
 
 import com.example.anytxttool.entity.IndexStat;
+import com.example.anytxttool.entity.Setting;
 import com.example.anytxttool.manager.IndexStatManager;
+import com.example.anytxttool.manager.SettingManager;
 import com.example.anytxttool.manager.ToolConfigManager;
 import com.example.anytxttool.objects.RuleFtlDataModel;
 import com.example.anytxttool.objects.enums.EntityStat;
@@ -25,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -36,11 +39,28 @@ public class AnytxtToolApplicationTests {
     private List<String> scannedDirList = new LinkedList<>();
 
     @Autowired
+    private SettingManager settingManager;
+    @Autowired
     private IndexStatManager indexStatManager;
     @Autowired
     private ToolConfigManager toolConfigManager;
     @Autowired
     private AnytxtToolService anytxtToolService;
+
+    @Test
+    public void testGetAllSetting() {
+        List<Setting> settingList = settingManager.getAll();
+        settingList.forEach(System.out::println);
+    }
+
+    @Test
+    public void testGetAllIndexStat() {
+        List<IndexStat> indexStatList = indexStatManager.getAll();
+        indexStatList.forEach(indexStat -> {
+            indexStat.setRule(null);
+            System.out.println(indexStat);
+        });
+    }
 
     @Test
     public void testDelAllIndexStat() {
@@ -80,8 +100,8 @@ public class AnytxtToolApplicationTests {
         // 重置
         indexStatManager.deleteAll(true);
         RuleType ruleType = RuleType.EXCLUDE_DIR;
-        String ruleFtl = anytxtToolService.renderRuleFtl(new RuleFtlDataModel(ruleType.getCoordinate(), ignoredDirList.size(), 0, ignoredDirList));
-        List<IndexStat> indexStatList = toolConfigManager.getFileTypeList().stream().map(fileType -> anytxtToolService.assembleIndexStat(fileType, EntityStat.NEW.getCoordinate(), 0, ruleFtl)).collect(Collectors.toList());
+        String ruleFtl = anytxtToolService.renderRuleFtl(new RuleFtlDataModel(ruleType.getCoord(), ignoredDirList.size(), 0, ignoredDirList));
+        List<IndexStat> indexStatList = toolConfigManager.getFileTypeList().stream().map(fileType -> anytxtToolService.assembleIndexStat(fileType, EntityStat.NEW.getCoord(), 0, ruleFtl)).collect(Collectors.toList());
         anytxtToolService.addAllIndexStat(indexStatList);
     }
 

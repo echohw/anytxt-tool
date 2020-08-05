@@ -35,9 +35,7 @@ public class IndexStatManager {
             keyHolder
         );
         Optional.ofNullable(keyHolder.getKey()).ifPresent(key -> {
-            int autoId = key.intValue();
-            indexStat.setRowId(autoId);
-            indexStat.setId(autoId);
+            indexStat.setId(key.intValue());
         });
         return indexStat;
     }
@@ -47,22 +45,12 @@ public class IndexStatManager {
         return indexStats;
     }
 
-    public int deleteByRowId(int rowId, boolean trueDel) {
-        if (trueDel) {
-            String sql = String.format("delete from %s where rowid = %s", IndexStat.TABLE, rowId);
-            return jdbcUtils.delete(sql);
-        } else {
-            String sql = String.format("update %s set stat = %s where rowid = %s", IndexStat.TABLE, EntityStat.DELETED.getCoordinate(), rowId);
-            return jdbcUtils.update(sql);
-        }
-    }
-
     public int deleteById(int id, boolean trueDel) {
         if (trueDel) {
             String sql = String.format("delete from %s where id = %s", IndexStat.TABLE, id);
             return jdbcUtils.delete(sql);
         } else {
-            String sql = String.format("update %s set stat = %s where id = %s", IndexStat.TABLE, EntityStat.DELETED.getCoordinate(), id);
+            String sql = String.format("update %s set stat = %s where id = %s", IndexStat.TABLE, EntityStat.DELETED.getCoord(), id);
             return jdbcUtils.update(sql);
         }
     }
@@ -72,7 +60,7 @@ public class IndexStatManager {
             String sql = String.format("delete from %s where ext = ?", IndexStat.TABLE);
             return jdbcUtils.delete(sql, new Object[]{Objects.requireNonNull(extName)}, new int[]{Types.VARCHAR});
         } else {
-            String sql = String.format("update %s set stat = %s where ext = ?", IndexStat.TABLE, EntityStat.DELETED.getCoordinate());
+            String sql = String.format("update %s set stat = %s where ext = ?", IndexStat.TABLE, EntityStat.DELETED.getCoord());
             return jdbcUtils.update(sql, new Object[]{Objects.requireNonNull(extName)}, new int[]{Types.VARCHAR});
         }
     }
@@ -83,7 +71,7 @@ public class IndexStatManager {
             String sql = String.format("delete from %s where stat in %s", IndexStat.TABLE, statInClause);
             return jdbcUtils.delete(sql);
         } else {
-            String sql = String.format("update %s set stat = %s where stat in %s", IndexStat.TABLE, EntityStat.DELETED.getCoordinate(), statInClause);
+            String sql = String.format("update %s set stat = %s where stat in %s", IndexStat.TABLE, EntityStat.DELETED.getCoord(), statInClause);
             return jdbcUtils.update(sql);
         }
     }
@@ -93,7 +81,7 @@ public class IndexStatManager {
             String sql = String.format("delete from %s", IndexStat.TABLE);
             return jdbcUtils.delete(sql);
         } else {
-            String sql = String.format("update %s set stat = %s", IndexStat.TABLE, EntityStat.DELETED.getCoordinate());
+            String sql = String.format("update %s set stat = %s", IndexStat.TABLE, EntityStat.DELETED.getCoord());
             return jdbcUtils.update(sql);
         }
     }
@@ -114,11 +102,6 @@ public class IndexStatManager {
             }).collect(Collectors.joining(","));
         String preparedSql = String.format("update %s set %s where id = %s", IndexStat.TABLE, setClause, Objects.requireNonNull(indexStat.getId()));
         return jdbcUtils.jdbcTemplate().update(preparedSql, argList.toArray());
-    }
-
-    public Optional<IndexStat> getByRowId(int rowId) {
-        String sql = String.format("select rowid, id, ext, stat, total, rule from %s where rowid = %s", IndexStat.TABLE, rowId);
-        return jdbcUtils.selectRow(sql, IndexStat.class);
     }
 
     public Optional<IndexStat> getById(int id) {
