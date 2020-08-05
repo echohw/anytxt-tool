@@ -41,7 +41,7 @@ public class ToolConfigManager {
         getDisIgnorePathRegex() // 必须放在最后
     );
 
-    public static String getDisIgnorePathRegex() {
+    public String getDisIgnorePathRegex() {
         Path desktopPath = PathUtils.getDesktopPath();
         Path systemDrive = PathUtils.getSystemDrive();
         ArrayList<String> desktopPathList = CollectionUtils.flat(ArrayList::new,

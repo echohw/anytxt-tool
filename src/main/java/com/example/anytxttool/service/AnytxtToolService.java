@@ -8,6 +8,7 @@ import com.example.devutils.dep.Charsets;
 import com.example.devutils.dep.MyFileVisitor;
 import com.example.devutils.utils.io.DirectoryUtils;
 import com.example.devutils.utils.io.PathUtils;
+import com.example.devutils.utils.text.StringUtils;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
@@ -16,11 +17,16 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
 import org.jooq.lambda.Unchecked;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -76,8 +82,27 @@ public class AnytxtToolService {
         return new String(byteArrayOutputStream.toByteArray(), Charsets.UTF_8);
     }
 
-    public RuleFtlDataModel parseRuleXml(String ruleXml) { // TODO
-        return new RuleFtlDataModel(RuleType.EXCLUDE_DIR.getCoord(), 0, 0, Arrays.asList());
+    public RuleFtlDataModel parseRuleXml(String ruleXml) throws DocumentException {
+        RuleFtlDataModel dataModel = new RuleFtlDataModel();
+        // 解析XML
+        ruleXml = ruleXml + "</boost_serialization>"; // 标签未闭合补齐
+        Document document = DocumentHelper.parseText(ruleXml);
+        Element dataObjElem = (Element) document.selectSingleNode("//dataObj");
+        Element ruleTypeElem = dataObjElem.element("m_ruleType");
+        Optional.ofNullable(ruleTypeElem.getTextTrim()).filter(StringUtils::isNotBlank).map(Integer::valueOf).ifPresent(type -> {
+            dataModel.setRuleType(RuleType.find(ruleType -> ruleType.getCoord() == type).orElse(RuleType.ALL).getCoord());
+        });
+        Element qslPathsElem = dataObjElem.element("m_qslPaths");
+        Element countElem = (Element) qslPathsElem.selectSingleNode("stdList/count");
+        Optional.ofNullable(countElem.getTextTrim()).filter(StringUtils::isNotBlank).map(Integer::valueOf).ifPresent(dataModel::setCount);
+        Element versionElem = (Element) qslPathsElem.selectSingleNode("stdList/item_version");
+        Optional.ofNullable(versionElem.getTextTrim()).filter(StringUtils::isNotBlank).map(Integer::valueOf).ifPresent(dataModel::setVersion);
+        List<Element> itemElems = qslPathsElem.selectNodes("stdList/item");
+        List<String> pathList = itemElems.stream()
+            .map(itemElem -> Optional.ofNullable(itemElem.element("stdString").getTextTrim()).filter(StringUtils::isNotBlank).orElse(""))
+            .filter(StringUtils::isNotBlank).collect(Collectors.toList());
+        dataModel.setDirList(pathList);
+        return dataModel;
     }
 
 }

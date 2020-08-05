@@ -9,25 +9,28 @@ import com.example.anytxttool.objects.RuleFtlDataModel;
 import com.example.anytxttool.objects.enums.EntityStat;
 import com.example.anytxttool.objects.enums.RuleType;
 import com.example.anytxttool.service.AnytxtToolService;
+import com.example.devutils.dep.Charsets;
+import com.example.devutils.utils.io.StreamUtils;
 import com.example.devutils.utils.text.RegexUtils;
 import freemarker.template.TemplateException;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.dom4j.DocumentException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
@@ -117,4 +120,12 @@ public class AnytxtToolApplicationTests {
         anytxtToolService.addAllIndexStat(indexStatList);
     }
 
+    @Test
+    public void testParseRuleXml() throws IOException, DocumentException {
+        ClassPathResource classPathResource = new ClassPathResource("ruleXml.xml");
+        String ruleXml = StreamUtils.readAsString(classPathResource.getInputStream(), Charsets.UTF_8);
+        RuleFtlDataModel dataModel = anytxtToolService.parseRuleXml(ruleXml);
+        System.out.println(dataModel);
+        dataModel.getDirList().forEach(System.out::println);
+    }
 }

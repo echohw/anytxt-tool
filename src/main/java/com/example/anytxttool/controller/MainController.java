@@ -34,6 +34,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import org.jooq.lambda.Unchecked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -205,7 +206,7 @@ public class MainController implements Initializable {
         totalTableCol.setEditable(false);
 
         ruleTableCol.setCellValueFactory(param -> {
-            RuleFtlDataModel dataModel = anytxtToolService.parseRuleXml(param.getValue().getRule());
+            RuleFtlDataModel dataModel = Unchecked.supplier(() -> anytxtToolService.parseRuleXml(param.getValue().getRule())).get();
             String ruleDisplayName = RuleType.find(type -> type.getCoord() == dataModel.getRuleType()).map(RuleType::getDisplayName).orElse("");
             return new ReadOnlyObjectWrapper<>(ruleDisplayName);
         });
