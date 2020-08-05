@@ -97,7 +97,7 @@ public class AnytxtToolService {
         Optional.ofNullable(countElem.getTextTrim()).filter(StringUtils::isNotBlank).map(Integer::valueOf).ifPresent(dataModel::setCount);
         Element versionElem = (Element) qslPathsElem.selectSingleNode("stdList/item_version");
         Optional.ofNullable(versionElem.getTextTrim()).filter(StringUtils::isNotBlank).map(Integer::valueOf).ifPresent(dataModel::setVersion);
-        List<Element> itemElems = qslPathsElem.selectNodes("stdList/item");
+        List<Element> itemElems = qslPathsElem.selectNodes("stdList/item").stream().map(node -> (Element) node).collect(Collectors.toList());
         List<String> pathList = itemElems.stream()
             .map(itemElem -> Optional.ofNullable(itemElem.element("stdString").getTextTrim()).filter(StringUtils::isNotBlank).orElse(""))
             .filter(StringUtils::isNotBlank).collect(Collectors.toList());
