@@ -85,12 +85,14 @@ public class AnytxtToolService {
     public RuleFtlDataModel parseRuleXml(String ruleXml) throws DocumentException {
         RuleFtlDataModel dataModel = new RuleFtlDataModel();
         // 解析XML
-        ruleXml = ruleXml + "</boost_serialization>"; // 标签未闭合补齐
+        if (!ruleXml.endsWith("</boost_serialization>")) {
+            ruleXml = ruleXml + "</boost_serialization>"; // 标签未闭合补齐
+        }
         Document document = DocumentHelper.parseText(ruleXml);
         Element dataObjElem = (Element) document.selectSingleNode("//dataObj");
         Element ruleTypeElem = dataObjElem.element("m_ruleType");
         Optional.ofNullable(ruleTypeElem.getTextTrim()).filter(StringUtils::isNotBlank).map(Integer::valueOf).ifPresent(type -> {
-            dataModel.setRuleType(RuleType.find(ruleType -> ruleType.getCoord() == type).orElse(RuleType.ALL).getCoord());
+            dataModel.setRuleType(RuleType.find(ruleType -> ruleType.getCoord() == type).orElse(RuleType.ALL));
         });
         Element qslPathsElem = dataObjElem.element("m_qslPaths");
         Element countElem = (Element) qslPathsElem.selectSingleNode("stdList/count");

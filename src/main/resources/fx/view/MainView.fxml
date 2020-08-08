@@ -4,6 +4,7 @@
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <BorderPane maxHeight="600.0" maxWidth="900.0" minHeight="600.0" minWidth="900.0" prefHeight="600.0"
@@ -11,8 +12,7 @@
   xmlns:fx="http://javafx.com/fxml/1"
   fx:controller="com.example.anytxttool.controller.MainController">
   <center>
-    <TableView fx:id="indexStatTableView" editable="true" prefWidth="200.0"
-      BorderPane.alignment="CENTER">
+    <TableView fx:id="indexStatTableView" editable="true" BorderPane.alignment="CENTER">
       <columns>
         <TableColumn fx:id="checkTableCol" prefWidth="75.0" sortable="false">
           <graphic>
@@ -20,21 +20,22 @@
           </graphic>
         </TableColumn>
         <TableColumn id="order" fx:id="orderTableCol" prefWidth="75.0" text="序号"/>
-        <TableColumn id="ext" fx:id="extTableCol" prefWidth="109.0" text="文件类型"/>
-        <TableColumn id="stat" fx:id="statTableCol" prefWidth="41.0" sortable="false" text="状态"/>
-        <TableColumn id="total" fx:id="totalTableCol" prefWidth="75.0" text="数量"/>
-        <TableColumn id="rule" fx:id="ruleTableCol" prefWidth="130.0" sortable="false" text="索引规则"/>
-        <TableColumn id="opt" fx:id="optTableCol" prefWidth="200.0" sortable="false" text="操作"/>
+        <TableColumn id="ext" fx:id="extTableCol" prefWidth="100.0" text="文件类型"/>
+        <TableColumn id="stat" fx:id="statTableCol" prefWidth="110.0" sortable="false" text="状态"/>
+        <TableColumn id="total" fx:id="totalTableCol" prefWidth="110.0" text="数量"/>
+        <TableColumn id="rule" fx:id="ruleTableCol" prefWidth="180.0" sortable="false" text="索引规则"/>
+        <TableColumn id="opt" fx:id="optTableCol" prefWidth="230.0" sortable="false" text="操作"/>
       </columns>
     </TableView>
   </center>
   <top>
-    <HBox alignment="CENTER_LEFT" spacing="2.0" BorderPane.alignment="CENTER">
+    <HBox fx:id="optHBox" alignment="CENTER_LEFT" spacing="2.0" BorderPane.alignment="CENTER">
       <children>
-        <Button fx:id="filterBtn" mnemonicParsing="false" onAction="#filterItem" text="筛选"/>
-        <Button fx:id="newBtn" mnemonicParsing="false" onAction="#newItem" text="新增"/>
-        <Button fx:id="delBtn" mnemonicParsing="false" onAction="#delItems" text="删除"/>
-        <Button fx:id="refreshBtn" mnemonicParsing="false" onAction="#refresh" text="刷新列表"/>
+        <TextField fx:id="filterListTextField" onKeyReleased="#filterList" promptText="筛选文件类型"/>
+        <Button fx:id="newItemBtn" mnemonicParsing="false" onAction="#newItem" text="新增"/>
+        <Button fx:id="delItemsBtn" mnemonicParsing="false" onAction="#delItems" text="移除"/>
+        <Button fx:id="confirmModBtn" mnemonicParsing="false" onAction="#confirmMod" text="确认修改"/>
+        <Button fx:id="refreshListBtn" mnemonicParsing="false" onAction="#refreshList" text="刷新列表"/>
       </children>
     </HBox>
   </top>

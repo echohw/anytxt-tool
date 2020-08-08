@@ -1,5 +1,6 @@
 package com.example.anytxttool.objects;
 
+import com.example.anytxttool.objects.enums.RuleType;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,7 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RuleFtlDataModel {
 
-    private Integer ruleType;
+    private RuleType ruleType;
     private Integer count;
     private Integer version;
     private List<String> dirList;

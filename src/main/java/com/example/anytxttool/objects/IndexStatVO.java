@@ -1,33 +1,56 @@
 package com.example.anytxttool.objects;
 
 import com.example.anytxttool.entity.IndexStat;
+import com.example.anytxttool.objects.enums.EntityStat;
+import com.example.anytxttool.objects.enums.RuleType;
+import java.util.Objects;
+import java.util.function.Function;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import lombok.Data;
 
 /**
  * Created by AMe on 2020-08-02 01:03.
  */
+@Data
 public class IndexStatVO {
+
+    private IndexStat indexStat;
+    private RuleFtlDataModel ruleFtlDataModel;
 
     private IntegerProperty id;
     private StringProperty ext;
-    private IntegerProperty stat;
+    private ObjectProperty<EntityStat> stat;
     private IntegerProperty total;
-    private StringProperty rule;
+    private ObjectProperty<RuleType> rule;
     private BooleanProperty selected;
 
-    public IndexStatVO(IndexStat indexStat) {
+    public IndexStatVO(IndexStat indexStat, Function<String, RuleFtlDataModel> xmlParser) {
+        this.indexStat = indexStat;
+        this.ruleFtlDataModel = Objects.requireNonNull(xmlParser.apply(indexStat.getRule()));
         id = new SimpleIntegerProperty(indexStat.getId());
         ext = new SimpleStringProperty(indexStat.getExt());
-        stat = new SimpleIntegerProperty(indexStat.getStat());
+        stat = new SimpleObjectProperty<>(EntityStat.find(stat -> stat.getCoord() == indexStat.getStat()).orElse(EntityStat.NEW));
         total = new SimpleIntegerProperty(indexStat.getTotal());
-        rule = new SimpleStringProperty(indexStat.getRule());
+        rule = new SimpleObjectProperty<>(ruleFtlDataModel.getRuleType());
         selected = new SimpleBooleanProperty(false);
     }
+
+    public IndexStat getIndexStat() {
+        return indexStat;
+    }
+
+    public RuleFtlDataModel getRuleFtlDataModel() {
+        return ruleFtlDataModel;
+    }
+
+    // ========================================
 
     public int getId() {
         return id.get();
@@ -53,15 +76,15 @@ public class IndexStatVO {
         this.ext.set(ext);
     }
 
-    public int getStat() {
+    public EntityStat getStat() {
         return stat.get();
     }
 
-    public IntegerProperty statProperty() {
+    public ObjectProperty<EntityStat> statProperty() {
         return stat;
     }
 
-    public void setStat(int stat) {
+    public void setStat(EntityStat stat) {
         this.stat.set(stat);
     }
 
@@ -77,15 +100,15 @@ public class IndexStatVO {
         this.total.set(total);
     }
 
-    public String getRule() {
+    public RuleType getRule() {
         return rule.get();
     }
 
-    public StringProperty ruleProperty() {
+    public ObjectProperty<RuleType> ruleProperty() {
         return rule;
     }
 
-    public void setRule(String rule) {
+    public void setRule(RuleType rule) {
         this.rule.set(rule);
     }
 

@@ -29,7 +29,7 @@ public class IndexStatManager {
 
     public IndexStat add(IndexStat indexStat) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        int affectedRows = jdbcUtils.insert(
+        jdbcUtils.insert(
             IndexStat.TABLE,
             MapUtils.of(LinkedHashMap::new, "ext", indexStat.getExt(), "stat", indexStat.getStat(), "total", indexStat.getTotal(), "rule", indexStat.getRule()),
             keyHolder

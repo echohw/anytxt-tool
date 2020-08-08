@@ -3,18 +3,21 @@ package com.example.anytxttool.controller;
 import com.example.anytxttool.entity.IndexStat;
 import com.example.anytxttool.manager.ToolConfigManager;
 import com.example.anytxttool.objects.IndexStatVO;
-import com.example.anytxttool.objects.RuleFtlDataModel;
-import com.example.anytxttool.objects.enums.EntityStat;
-import com.example.anytxttool.objects.enums.RuleType;
 import com.example.anytxttool.service.AnytxtToolService;
 import com.example.anytxttool.view.MainView;
+import com.example.devutils.utils.collection.CollectionUtils;
+import com.example.devutils.utils.text.StringUtils;
 import de.felixroske.jfxsupport.FXMLController;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -29,12 +32,16 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import javafx.util.converter.DefaultStringConverter;
 import org.jooq.lambda.Unchecked;
+import org.jooq.lambda.tuple.Tuple2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,8 +54,12 @@ public class MainController implements Initializable {
 
     private static final Logger logger = LoggerFactory.getLogger(MainController.class);
 
+    private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
+
     private URL location;
     private ResourceBundle resources;
+
+    private Tuple2<List<IndexStat>, List<IndexStatVO>> indexStatTuple2;
 
     @Autowired
     private MainView mainView;
@@ -83,19 +94,32 @@ public class MainController implements Initializable {
     // }
 
     @FXML
+    private HBox optHBox;
+    @FXML
+    private TextField filterListTextField;
+    @FXML
+    private Button newItemBtn;
+    @FXML
+    private Button delItemsBtn;
+    @FXML
+    private Button confirmModBtn;
+    @FXML
+    private Button refreshListBtn;
+
+    @FXML
     private TableView<IndexStatVO> indexStatTableView;
     @FXML
     private CheckBox batchChoiceCheckBox;
     @FXML
     private TableColumn<IndexStatVO, Boolean> checkTableCol;
     @FXML
-    private TableColumn<IndexStatVO, Integer> orderTableCol;
+    private TableColumn<IndexStatVO, Number> orderTableCol;
     @FXML
     private TableColumn<IndexStatVO, String> extTableCol;
     @FXML
     private TableColumn<IndexStatVO, String> statTableCol;
     @FXML
-    private TableColumn<IndexStatVO, Integer> totalTableCol;
+    private TableColumn<IndexStatVO, Number> totalTableCol;
     @FXML
     private TableColumn<IndexStatVO, String> ruleTableCol;
     @FXML
@@ -109,45 +133,90 @@ public class MainController implements Initializable {
         indexStatTableView.getItems().forEach(indexStatVO -> indexStatVO.setSelected(checkAll));
     }
 
-    @FXML
-    public void filterItem() {
+    private List<IndexStatVO> filterList(String keyword, List<IndexStatVO> indexStatVOList) {
+        return indexStatVOList.stream().filter(indexStatVO -> indexStatVO.getExt().contains(keyword)).collect(Collectors.toList());
+    }
 
+    @FXML
+    public void filterList(KeyEvent event) {
+        String keyword = filterListTextField.getCharacters().toString();
+        List<IndexStatVO> filteredItems = filterList(keyword, indexStatTuple2.v2());
+        indexStatTableView.setItems(FXCollections.observableArrayList(filteredItems));
+        batchChoiceCheckBox.setSelected(false);
+        indexStatTuple2.v2().forEach(indexStatVO -> indexStatVO.setSelected(false));
     }
 
     @FXML
     public void newItem() {
-
+        // IndexStatVO indexStatVO = new IndexStatVO(new IndexStat(), );
+        // indexStatTableView.getItems().add(indexStatVO);
     }
 
     @FXML
     public void delItems() {
-        boolean hasSelected = indexStatTableView.getItems().stream().anyMatch(IndexStatVO::isSelected);
-        if (!hasSelected) {
-            Alert alert = new Alert(AlertType.INFORMATION, "请选择要删除的项");
+        List<IndexStatVO> indexStatVOList = indexStatTableView.getItems().stream().filter(IndexStatVO::isSelected).collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(indexStatVOList)) {
+            Alert alert = new Alert(AlertType.INFORMATION, "请选择要移除的项");
             alert.show();
             return;
         }
+        indexStatTableView.getItems().removeAll(indexStatVOList);
+        batchChoiceCheckBox.setSelected(false);
+    }
+
+    /**
+     * 只关心当前可视列表中数据的更新情况
+     */
+    @FXML
+    public void confirmMod() {
+        Tuple2<List<IndexStat>, List<IndexStatVO>> tuple2 = loadTableViewData();
+        List<IndexStat> dbIndexStatList = filterList(filterListTextField.getCharacters().toString(), tuple2.v2()).stream().map(IndexStatVO::getIndexStat).collect(Collectors.toList());
+        List<IndexStat> pageIndexStatList = indexStatTableView.getItems().stream().map(IndexStatVO::getIndexStat).collect(Collectors.toList());
+
+        long newItemCount = pageIndexStatList.stream().filter(indexStat -> indexStat.getId() == null).count();
+        int uptItemCount = CollectionUtils.subtract(ArrayList::new,
+            pageIndexStatList.stream().filter(indexStat -> indexStat.getId() != null).collect(Collectors.toList()),
+            dbIndexStatList
+        ).size();
+        int delItemCount = CollectionUtils.subtract(ArrayList::new,
+            dbIndexStatList.stream().map(IndexStat::getId).collect(Collectors.toList()),
+            pageIndexStatList.stream().filter(indexStat -> indexStat.getId() != null).map(IndexStat::getId).collect(Collectors.toList())
+        ).size();
         ButtonType okBtn = new ButtonType("确定", ButtonData.YES);
         ButtonType cancelBtn = new ButtonType("取消", ButtonData.NO);
         Alert alert = new Alert(Alert.AlertType.WARNING, "", okBtn, cancelBtn);
-        alert.setHeaderText("您正在执行删除操作！");
-        List<IndexStatVO> indexStatVOList = indexStatTableView.getItems().stream().filter(IndexStatVO::isSelected).collect(Collectors.toList());
-        String delItemInfo = indexStatVOList.stream().map(IndexStatVO::getExt).limit(5).collect(Collectors.joining("、"));
-        alert.setContentText(String.format("即将删除%s等文件类型的%s项数据，是否继续？", delItemInfo, indexStatVOList.size()));
+        alert.setHeaderText("您正在执行修改操作！");
+        alert.setContentText(String.format("本次操作新增了%s项、修改了%s项、删除了%s项，是否继续？", newItemCount, uptItemCount, delItemCount));
         Optional<ButtonType> buttonType = alert.showAndWait();
         buttonType.ifPresent(btnType -> {
-            if (btnType.equals(okBtn)) {
-                anytxtToolService.deleteIndexStatByIdIn(indexStatVOList.stream().map(IndexStatVO::getId).collect(Collectors.toList()));
-                batchChoiceCheckBox.setSelected(false);
-                this.refresh();
+            if (btnType.equals(okBtn) && (newItemCount != 0 || uptItemCount != 0 || delItemCount != 0)) {
+                List<Button> btnList = optHBox.getChildren().stream().filter(node -> node instanceof Button).map(Button.class::cast).collect(Collectors.toList());
+                btnList.forEach(btn -> btn.setDisable(true));
+                executorService.submit(() -> {
+                    try {
+                        anytxtToolService.deleteAllIndexStat();
+                        anytxtToolService.addAllIndexStat(pageIndexStatList);
+                        batchChoiceCheckBox.setSelected(false);
+                        this.refreshList();
+                    } finally {
+                        btnList.forEach(btn -> btn.setDisable(false));
+                    }
+                });
             }
         });
     }
 
     @FXML
-    public void refresh() {
-        this.initTableView();
-        batchChoiceCheckBox.setSelected(false);
+    public void refreshList() {
+        refreshListBtn.setDisable(true);
+        executorService.submit(() -> {
+            try {
+                indexStatTableView.setItems(FXCollections.observableArrayList(loadTableViewData().v2()));
+                batchChoiceCheckBox.setSelected(false);
+            } finally {
+                refreshListBtn.setDisable(false);
+            }
+        });
     }
 
     @Override
@@ -155,7 +224,7 @@ public class MainController implements Initializable {
         this.location = location;
         this.resources = resources;
 
-        this.initTableView();
+        this.initTableView(loadTableViewData().v2());
         // ignoreDirRegexListView.setItems(FXCollections.observableArrayList(toolConfigManager.getIgnoreDirRegexList()));
         // fileTypeListView.setItems(FXCollections.observableArrayList(toolConfigManager.getFileTypeList()));
         // scanPathListView.setItems(FXCollections.observableArrayList(toolConfigManager.getScanPathList()));
@@ -181,54 +250,89 @@ public class MainController implements Initializable {
         // });
     }
 
-    private void initTableView() {
+    private Tuple2<List<IndexStat>, List<IndexStatVO>> loadTableViewData() {
         List<IndexStat> allIndexStat = anytxtToolService.getAllIndexStat();
-        List<IndexStatVO> allIndexStatVO = allIndexStat.stream().map(IndexStatVO::new).collect(Collectors.toList());
+        List<IndexStatVO> allIndexStatVO = allIndexStat.parallelStream()
+            .map(indexStat -> new IndexStatVO(indexStat, Unchecked.function(ruleXml -> anytxtToolService.parseRuleXml(ruleXml))))
+            .sorted(Comparator.comparingInt(IndexStatVO::getId)).collect(Collectors.toList());
+        indexStatTuple2 = new Tuple2<>(allIndexStat, allIndexStatVO);
+        return indexStatTuple2;
+    }
+
+    private void initTableView(List<IndexStatVO> allIndexStatVO) {
         indexStatTableView.setItems(FXCollections.observableArrayList(allIndexStatVO));
 
         checkTableCol.setCellValueFactory(new PropertyValueFactory<>("selected"));
         checkTableCol.setCellFactory(CheckBoxTableCell.forTableColumn(checkTableCol));
 
-        orderTableCol.setCellValueFactory(param -> new ReadOnlyObjectWrapper<>(allIndexStatVO.indexOf(param.getValue()) + 1));
-
-        extTableCol.setCellValueFactory(new PropertyValueFactory<>("ext"));
-        extTableCol.setCellFactory(TextFieldTableCell.forTableColumn());
-        extTableCol.setEditable(true);
-
-        statTableCol.setCellValueFactory(param -> {
-            String statDisplayName = EntityStat.find(stat -> stat.getCoord() == param.getValue().getStat()).map(EntityStat::getDisplayName).orElse("");
-            return new ReadOnlyObjectWrapper<>(statDisplayName);
+        orderTableCol.setCellFactory(param -> new TableCell<IndexStatVO, Number>() {
+            @Override
+            protected void updateItem(Number item, boolean empty) {
+                super.updateItem(item, empty);
+                this.setText(null);
+                this.setGraphic(null);
+                if (!empty) { // 非空行才向单元格中填充内容
+                    int rowIndex = this.getIndex();
+                    this.setText(String.valueOf(rowIndex + 1));
+                }
+            }
         });
+
+        extTableCol.setCellFactory(param -> new TextFieldTableCell<IndexStatVO, String>(new DefaultStringConverter()) {
+            @Override
+            public void commitEdit(String newExt) {
+                String errorMsg = null;
+                if (StringUtils.isBlank(newExt) || !newExt.startsWith(".")) {
+                    errorMsg = "错误的文件类型";
+                }
+                if (StringUtils.isBlank(errorMsg)) {
+                    IndexStatVO rowValue = indexStatTableView.getItems().get(indexStatTableView.getEditingCell().getRow());
+                    boolean match = indexStatTableView.getItems().stream().anyMatch(indexStatVO -> indexStatVO.getExt().equals(newExt) && indexStatVO.getId() != rowValue.getId());
+                    if (match) {
+                        errorMsg = "文件类型已存在";
+                    }
+                }
+                if (StringUtils.isNotBlank(errorMsg)) {
+                    new Alert(AlertType.ERROR, errorMsg).showAndWait();
+                    super.cancelEdit();
+                    return;
+                }
+                super.commitEdit(newExt);
+            }
+        });
+        extTableCol.setCellValueFactory(new PropertyValueFactory<>("ext"));
+        extTableCol.setEditable(true);
+        extTableCol.setOnEditCommit(event -> {
+            event.getRowValue().setExt(event.getNewValue());
+        });
+
         statTableCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        statTableCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getStat().getDisplayName()));
         statTableCol.setEditable(true);
 
         totalTableCol.setCellValueFactory(new PropertyValueFactory<>("total"));
         totalTableCol.setEditable(false);
 
-        ruleTableCol.setCellValueFactory(param -> {
-            RuleFtlDataModel dataModel = Unchecked.supplier(() -> anytxtToolService.parseRuleXml(param.getValue().getRule())).get();
-            String ruleDisplayName = RuleType.find(type -> type.getCoord() == dataModel.getRuleType()).map(RuleType::getDisplayName).orElse("");
-            return new ReadOnlyObjectWrapper<>(ruleDisplayName);
-        });
-        ruleTableCol.setEditable(true);
         ruleTableCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        ruleTableCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getRule().getDisplayName()));
+        ruleTableCol.setEditable(true);
 
         optTableCol.setCellFactory(param -> new TableCell<IndexStatVO, String>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                Button modBtn = new Button("修改");
-                modBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
-                    System.out.println("modBtn");
-                });
-                Button showDescBtn = new Button("查看规则目录列表");
-                showDescBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
-                    System.out.println("showDescBtn");
-                });
-                HBox hBox = new HBox(modBtn, showDescBtn);
-                hBox.setSpacing(10);
-                hBox.setAlignment(Pos.CENTER);
-                this.setGraphic(hBox);
+                this.setText(null);
+                this.setGraphic(null);
+                if (!empty) {
+                    Button showDescBtn = new Button("查看规则目录列表");
+                    showDescBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+                        System.out.println("showDescBtn");
+                    });
+                    HBox hBox = new HBox(showDescBtn);
+                    hBox.setSpacing(10);
+                    hBox.setAlignment(Pos.CENTER);
+                    this.setGraphic(hBox);
+                }
             }
         });
     }

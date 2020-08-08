@@ -76,7 +76,7 @@ public class AnytxtToolApplicationTests {
         RuleFtlDataModel dataModel = new RuleFtlDataModel();
         dataModel.setVersion(0);
         dataModel.setCount(1001);
-        dataModel.setRuleType(RuleType.EXCLUDE_DIR.getCoord());
+        dataModel.setRuleType(RuleType.EXCLUDE_DIR);
         dataModel.setDirList(Collections.emptyList());
         String ruleFtl = anytxtToolService.renderRuleFtl(dataModel);
         System.out.println(ruleFtl);
@@ -115,7 +115,7 @@ public class AnytxtToolApplicationTests {
         // 重置
         indexStatManager.deleteAll(true);
         RuleType ruleType = RuleType.EXCLUDE_DIR;
-        String ruleFtl = anytxtToolService.renderRuleFtl(new RuleFtlDataModel(ruleType.getCoord(), ignoredDirList.size(), 0, ignoredDirList));
+        String ruleFtl = anytxtToolService.renderRuleFtl(new RuleFtlDataModel(ruleType, ignoredDirList.size(), 0, ignoredDirList));
         List<IndexStat> indexStatList = toolConfigManager.getFileTypeList().stream().map(fileType -> anytxtToolService.assembleIndexStat(fileType, EntityStat.NEW.getCoord(), 0, ruleFtl)).collect(Collectors.toList());
         anytxtToolService.addAllIndexStat(indexStatList);
     }
