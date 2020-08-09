@@ -55,18 +55,21 @@ public class IndexStatManager {
         }
     }
 
-    public int deleteByExt(String extName, boolean trueDel) {
+    public int deleteAllByIdIn(int[] ids, boolean trueDel) {
+        if (ids.length == 0) return 0;
+        String idInClause = Arrays.stream(ids).boxed().map(String::valueOf).collect(Collectors.joining(",", "(", ")"));
         if (trueDel) {
-            String sql = String.format("delete from %s where ext = ?", IndexStat.TABLE);
-            return jdbcUtils.delete(sql, new Object[]{Objects.requireNonNull(extName)}, new int[]{Types.VARCHAR});
+            String sql = String.format("delete from %s where id in %s", IndexStat.TABLE, idInClause);
+            return jdbcUtils.delete(sql);
         } else {
-            String sql = String.format("update %s set stat = %s where ext = ?", IndexStat.TABLE, EntityStat.DELETED.getCoord());
-            return jdbcUtils.update(sql, new Object[]{Objects.requireNonNull(extName)}, new int[]{Types.VARCHAR});
+            String sql = String.format("update %s set stat = %s where id in %s", IndexStat.TABLE, EntityStat.DELETED.getCoord(), idInClause);
+            return jdbcUtils.update(sql);
         }
     }
 
-    public int deleteAllByStatIn(int[] stat, boolean trueDel) {
-        String statInClause = Arrays.stream(stat).boxed().map(String::valueOf).collect(Collectors.joining(",", "(", ")"));
+    public int deleteAllByStatIn(int[] stats, boolean trueDel) {
+        if (stats.length == 0) return 0;
+        String statInClause = Arrays.stream(stats).boxed().map(String::valueOf).collect(Collectors.joining(",", "(", ")"));
         if (trueDel) {
             String sql = String.format("delete from %s where stat in %s", IndexStat.TABLE, statInClause);
             return jdbcUtils.delete(sql);

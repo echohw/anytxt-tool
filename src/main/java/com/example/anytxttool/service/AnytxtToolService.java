@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -50,16 +51,16 @@ public class AnytxtToolService {
         });
     }
 
-    public void deleteAllIndexStat() {
-        indexStatManager.deleteAll(true);
+    public void addAllIndexStat(Collection<IndexStat> indexStats) {
+        indexStatManager.addAll(indexStats);
     }
 
-    public void deleteIndexStatByIdIn(List<Integer> idList) {
-        idList.forEach(id -> indexStatManager.deleteById(id, true));
+    public void deleteAllIndexStatByIdIn(Collection<Integer> ids) {
+        indexStatManager.deleteAllByIdIn(ids.stream().mapToInt(Integer::intValue).toArray(), true);
     }
 
-    public void addAllIndexStat(List<IndexStat> indexStatList) {
-        indexStatManager.addAll(indexStatList);
+    public void updateAllIndexStatById(Collection<IndexStat> indexStats) {
+        indexStats.forEach(indexStatManager::updateSelectiveById);
     }
 
     public List<IndexStat> getAllIndexStat() {

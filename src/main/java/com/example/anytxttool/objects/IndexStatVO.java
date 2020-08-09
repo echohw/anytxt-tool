@@ -23,6 +23,8 @@ public class IndexStatVO {
 
     private IndexStat indexStat;
     private RuleFtlDataModel ruleFtlDataModel;
+    private Function<String, RuleFtlDataModel> xmlParser;
+    private Function<RuleFtlDataModel, String> dataModelRenderer;
 
     private IntegerProperty id;
     private StringProperty ext;
@@ -31,9 +33,12 @@ public class IndexStatVO {
     private ObjectProperty<RuleType> rule;
     private BooleanProperty selected;
 
-    public IndexStatVO(IndexStat indexStat, Function<String, RuleFtlDataModel> xmlParser) {
-        this.indexStat = indexStat;
+    public IndexStatVO(IndexStat indexStat, Function<String, RuleFtlDataModel> xmlParser, Function<RuleFtlDataModel, String> dataModelRenderer) {
+        this.indexStat = Objects.requireNonNull(indexStat);
+        this.xmlParser = Objects.requireNonNull(xmlParser);
         this.ruleFtlDataModel = Objects.requireNonNull(xmlParser.apply(indexStat.getRule()));
+        this.dataModelRenderer = Objects.requireNonNull(dataModelRenderer);
+
         id = new SimpleIntegerProperty(indexStat.getId());
         ext = new SimpleStringProperty(indexStat.getExt());
         stat = new SimpleObjectProperty<>(EntityStat.find(stat -> stat.getCoord() == indexStat.getStat()).orElse(EntityStat.NEW));
@@ -62,6 +67,7 @@ public class IndexStatVO {
 
     public void setId(int id) {
         this.id.set(id);
+        this.indexStat.setId(id);
     }
 
     public String getExt() {
@@ -74,6 +80,7 @@ public class IndexStatVO {
 
     public void setExt(String ext) {
         this.ext.set(ext);
+        this.indexStat.setExt(ext);
     }
 
     public EntityStat getStat() {
@@ -86,6 +93,7 @@ public class IndexStatVO {
 
     public void setStat(EntityStat stat) {
         this.stat.set(stat);
+        this.indexStat.setStat(stat.getCoord());
     }
 
     public int getTotal() {
@@ -98,6 +106,7 @@ public class IndexStatVO {
 
     public void setTotal(int total) {
         this.total.set(total);
+        this.indexStat.setTotal(total);
     }
 
     public RuleType getRule() {
@@ -110,6 +119,7 @@ public class IndexStatVO {
 
     public void setRule(RuleType rule) {
         this.rule.set(rule);
+        this.ruleFtlDataModel.setRuleType(rule);
     }
 
     public boolean isSelected() {

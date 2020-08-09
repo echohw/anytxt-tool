@@ -1,10 +1,10 @@
 package com.example.anytxttool.controller;
 
 import com.example.anytxttool.entity.IndexStat;
-import com.example.anytxttool.manager.ToolConfigManager;
 import com.example.anytxttool.objects.IndexStatVO;
 import com.example.anytxttool.service.AnytxtToolService;
 import com.example.anytxttool.view.MainView;
+import com.example.devutils.utils.ThreadPoolUtils;
 import com.example.devutils.utils.collection.CollectionUtils;
 import com.example.devutils.utils.text.StringUtils;
 import de.felixroske.jfxsupport.FXMLController;
@@ -14,8 +14,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -40,6 +38,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.util.converter.DefaultStringConverter;
+import javafx.util.converter.IntegerStringConverter;
 import org.jooq.lambda.Unchecked;
 import org.jooq.lambda.tuple.Tuple2;
 import org.slf4j.Logger;
@@ -54,8 +53,6 @@ public class MainController implements Initializable {
 
     private static final Logger logger = LoggerFactory.getLogger(MainController.class);
 
-    private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
-
     private URL location;
     private ResourceBundle resources;
 
@@ -63,8 +60,6 @@ public class MainController implements Initializable {
 
     @Autowired
     private MainView mainView;
-    @Autowired
-    private ToolConfigManager toolConfigManager;
     @Autowired
     private AnytxtToolService anytxtToolService;
 
@@ -113,24 +108,26 @@ public class MainController implements Initializable {
     @FXML
     private TableColumn<IndexStatVO, Boolean> checkTableCol;
     @FXML
-    private TableColumn<IndexStatVO, Number> orderTableCol;
+    private TableColumn<IndexStatVO, Integer> orderTableCol;
     @FXML
     private TableColumn<IndexStatVO, String> extTableCol;
     @FXML
     private TableColumn<IndexStatVO, String> statTableCol;
     @FXML
-    private TableColumn<IndexStatVO, Number> totalTableCol;
+    private TableColumn<IndexStatVO, Integer> totalTableCol;
     @FXML
     private TableColumn<IndexStatVO, String> ruleTableCol;
     @FXML
     private TableColumn<IndexStatVO, String> optTableCol;
 
+    private void batchChoice(boolean checkAll) {
+        batchChoiceCheckBox.setSelected(checkAll);
+        indexStatTableView.getItems().forEach(indexStatVO -> indexStatVO.setSelected(checkAll));
+    }
+
     @FXML
     public void batchChoice(ActionEvent event) {
-        CheckBox checkBox = (CheckBox) event.getSource();
-        boolean checkAll = indexStatTableView.getItems().stream().anyMatch(indexStatVO -> !indexStatVO.isSelected());
-        checkBox.setSelected(checkAll);
-        indexStatTableView.getItems().forEach(indexStatVO -> indexStatVO.setSelected(checkAll));
+        batchChoice(indexStatTableView.getItems().stream().anyMatch(indexStatVO -> !indexStatVO.isSelected()));
     }
 
     private List<IndexStatVO> filterList(String keyword, List<IndexStatVO> indexStatVOList) {
@@ -170,18 +167,21 @@ public class MainController implements Initializable {
     @FXML
     public void confirmMod() {
         Tuple2<List<IndexStat>, List<IndexStatVO>> tuple2 = loadTableViewData();
-        List<IndexStat> dbIndexStatList = filterList(filterListTextField.getCharacters().toString(), tuple2.v2()).stream().map(IndexStatVO::getIndexStat).collect(Collectors.toList());
-        List<IndexStat> pageIndexStatList = indexStatTableView.getItems().stream().map(IndexStatVO::getIndexStat).collect(Collectors.toList());
+        List<IndexStat> referIndexStatList = filterList(filterListTextField.getCharacters().toString(), tuple2.v2()).stream().map(IndexStatVO::getIndexStat).collect(Collectors.toList());
+        List<IndexStat> viewIndexStatList = indexStatTableView.getItems().stream().map(IndexStatVO::getIndexStat).collect(Collectors.toList());
 
-        long newItemCount = pageIndexStatList.stream().filter(indexStat -> indexStat.getId() == null).count();
-        int uptItemCount = CollectionUtils.subtract(ArrayList::new,
-            pageIndexStatList.stream().filter(indexStat -> indexStat.getId() != null).collect(Collectors.toList()),
-            dbIndexStatList
-        ).size();
-        int delItemCount = CollectionUtils.subtract(ArrayList::new,
-            dbIndexStatList.stream().map(IndexStat::getId).collect(Collectors.toList()),
-            pageIndexStatList.stream().filter(indexStat -> indexStat.getId() != null).map(IndexStat::getId).collect(Collectors.toList())
-        ).size();
+        List<IndexStat> newItems = viewIndexStatList.stream().filter(indexStat -> indexStat.getId() == null).collect(Collectors.toList());
+        int newItemCount = newItems.size();
+        ArrayList<IndexStat> uptItems = CollectionUtils.subtract(ArrayList::new,
+            viewIndexStatList.stream().filter(indexStat -> indexStat.getId() != null).collect(Collectors.toList()),
+            referIndexStatList
+        );
+        int uptItemCount = uptItems.size();
+        ArrayList<Integer> delItems = CollectionUtils.subtract(ArrayList::new,
+            referIndexStatList.stream().map(IndexStat::getId).collect(Collectors.toList()),
+            viewIndexStatList.stream().filter(indexStat -> indexStat.getId() != null).map(IndexStat::getId).collect(Collectors.toList())
+        );
+        int delItemCount = delItems.size();
         ButtonType okBtn = new ButtonType("确定", ButtonData.YES);
         ButtonType cancelBtn = new ButtonType("取消", ButtonData.NO);
         Alert alert = new Alert(Alert.AlertType.WARNING, "", okBtn, cancelBtn);
@@ -192,10 +192,11 @@ public class MainController implements Initializable {
             if (btnType.equals(okBtn) && (newItemCount != 0 || uptItemCount != 0 || delItemCount != 0)) {
                 List<Button> btnList = optHBox.getChildren().stream().filter(node -> node instanceof Button).map(Button.class::cast).collect(Collectors.toList());
                 btnList.forEach(btn -> btn.setDisable(true));
-                executorService.submit(() -> {
+                ThreadPoolUtils.submit(() -> {
                     try {
-                        anytxtToolService.deleteAllIndexStat();
-                        anytxtToolService.addAllIndexStat(pageIndexStatList);
+                        Optional.of(newItems).filter(CollectionUtils::isNotEmpty).ifPresent(anytxtToolService::addAllIndexStat);
+                        Optional.of(uptItems).filter(CollectionUtils::isNotEmpty).ifPresent(anytxtToolService::updateAllIndexStatById);
+                        Optional.of(delItems).filter(CollectionUtils::isNotEmpty).ifPresent(anytxtToolService::deleteAllIndexStatByIdIn);
                         batchChoiceCheckBox.setSelected(false);
                         this.refreshList();
                     } finally {
@@ -209,7 +210,7 @@ public class MainController implements Initializable {
     @FXML
     public void refreshList() {
         refreshListBtn.setDisable(true);
-        executorService.submit(() -> {
+        ThreadPoolUtils.submit(() -> {
             try {
                 indexStatTableView.setItems(FXCollections.observableArrayList(loadTableViewData().v2()));
                 batchChoiceCheckBox.setSelected(false);
@@ -253,7 +254,11 @@ public class MainController implements Initializable {
     private Tuple2<List<IndexStat>, List<IndexStatVO>> loadTableViewData() {
         List<IndexStat> allIndexStat = anytxtToolService.getAllIndexStat();
         List<IndexStatVO> allIndexStatVO = allIndexStat.parallelStream()
-            .map(indexStat -> new IndexStatVO(indexStat, Unchecked.function(ruleXml -> anytxtToolService.parseRuleXml(ruleXml))))
+            .map(indexStat -> new IndexStatVO(
+                indexStat,
+                Unchecked.function(ruleXml -> anytxtToolService.parseRuleXml(ruleXml)),
+                Unchecked.function(dataModel -> anytxtToolService.renderRuleFtl(dataModel))
+            ))
             .sorted(Comparator.comparingInt(IndexStatVO::getId)).collect(Collectors.toList());
         indexStatTuple2 = new Tuple2<>(allIndexStat, allIndexStatVO);
         return indexStatTuple2;
@@ -262,12 +267,13 @@ public class MainController implements Initializable {
     private void initTableView(List<IndexStatVO> allIndexStatVO) {
         indexStatTableView.setItems(FXCollections.observableArrayList(allIndexStatVO));
 
-        checkTableCol.setCellValueFactory(new PropertyValueFactory<>("selected"));
         checkTableCol.setCellFactory(CheckBoxTableCell.forTableColumn(checkTableCol));
+        checkTableCol.setCellValueFactory(new PropertyValueFactory<>("selected"));
+        checkTableCol.setEditable(true);
 
-        orderTableCol.setCellFactory(param -> new TableCell<IndexStatVO, Number>() {
+        orderTableCol.setCellFactory(param -> new TableCell<IndexStatVO, Integer>() {
             @Override
-            protected void updateItem(Number item, boolean empty) {
+            protected void updateItem(Integer item, boolean empty) {
                 super.updateItem(item, empty);
                 this.setText(null);
                 this.setGraphic(null);
@@ -277,6 +283,7 @@ public class MainController implements Initializable {
                 }
             }
         });
+        orderTableCol.setEditable(false);
 
         extTableCol.setCellFactory(param -> new TextFieldTableCell<IndexStatVO, String>(new DefaultStringConverter()) {
             @Override
@@ -310,8 +317,9 @@ public class MainController implements Initializable {
         statTableCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getStat().getDisplayName()));
         statTableCol.setEditable(true);
 
+        totalTableCol.setCellFactory(param -> new TextFieldTableCell<>(new IntegerStringConverter()));
         totalTableCol.setCellValueFactory(new PropertyValueFactory<>("total"));
-        totalTableCol.setEditable(false);
+        totalTableCol.setEditable(true);
 
         ruleTableCol.setCellFactory(TextFieldTableCell.forTableColumn());
         ruleTableCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getRule().getDisplayName()));
