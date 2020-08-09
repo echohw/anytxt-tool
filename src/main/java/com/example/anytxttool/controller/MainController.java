@@ -97,8 +97,6 @@ public class MainController implements Initializable {
     @FXML
     private Button delItemsBtn;
     @FXML
-    private Button confirmModBtn;
-    @FXML
     private Button refreshListBtn;
 
     @FXML
@@ -153,56 +151,22 @@ public class MainController implements Initializable {
     public void delItems() {
         List<IndexStatVO> indexStatVOList = indexStatTableView.getItems().stream().filter(IndexStatVO::isSelected).collect(Collectors.toList());
         if (CollectionUtils.isEmpty(indexStatVOList)) {
-            Alert alert = new Alert(AlertType.INFORMATION, "请选择要移除的项");
+            Alert alert = new Alert(AlertType.INFORMATION, "请选择要删除的项");
             alert.show();
             return;
         }
-        indexStatTableView.getItems().removeAll(indexStatVOList);
-        batchChoiceCheckBox.setSelected(false);
-    }
-
-    /**
-     * 只关心当前可视列表中数据的更新情况
-     */
-    @FXML
-    public void confirmMod() {
-        Tuple2<List<IndexStat>, List<IndexStatVO>> tuple2 = loadTableViewData();
-        List<IndexStat> referIndexStatList = filterList(filterListTextField.getCharacters().toString(), tuple2.v2()).stream().map(IndexStatVO::getIndexStat).collect(Collectors.toList());
-        List<IndexStat> viewIndexStatList = indexStatTableView.getItems().stream().map(IndexStatVO::getIndexStat).collect(Collectors.toList());
-
-        List<IndexStat> newItems = viewIndexStatList.stream().filter(indexStat -> indexStat.getId() == null).collect(Collectors.toList());
-        int newItemCount = newItems.size();
-        ArrayList<IndexStat> uptItems = CollectionUtils.subtract(ArrayList::new,
-            viewIndexStatList.stream().filter(indexStat -> indexStat.getId() != null).collect(Collectors.toList()),
-            referIndexStatList
-        );
-        int uptItemCount = uptItems.size();
-        ArrayList<Integer> delItems = CollectionUtils.subtract(ArrayList::new,
-            referIndexStatList.stream().map(IndexStat::getId).collect(Collectors.toList()),
-            viewIndexStatList.stream().filter(indexStat -> indexStat.getId() != null).map(IndexStat::getId).collect(Collectors.toList())
-        );
-        int delItemCount = delItems.size();
         ButtonType okBtn = new ButtonType("确定", ButtonData.YES);
         ButtonType cancelBtn = new ButtonType("取消", ButtonData.NO);
         Alert alert = new Alert(Alert.AlertType.WARNING, "", okBtn, cancelBtn);
-        alert.setHeaderText("您正在执行修改操作！");
-        alert.setContentText(String.format("本次操作新增了%s项、修改了%s项、删除了%s项，是否继续？", newItemCount, uptItemCount, delItemCount));
+        alert.setHeaderText("您正在执行删除操作！");
+
+        String delItemInfo = indexStatVOList.stream().map(IndexStatVO::getExt).limit(5).collect(Collectors.joining("、"));
+        alert.setContentText(String.format("即将删除%s等文件类型的%s项数据，是否继续？", delItemInfo, indexStatVOList.size()));
         Optional<ButtonType> buttonType = alert.showAndWait();
         buttonType.ifPresent(btnType -> {
-            if (btnType.equals(okBtn) && (newItemCount != 0 || uptItemCount != 0 || delItemCount != 0)) {
-                List<Button> btnList = optHBox.getChildren().stream().filter(node -> node instanceof Button).map(Button.class::cast).collect(Collectors.toList());
-                btnList.forEach(btn -> btn.setDisable(true));
-                ThreadPoolUtils.submit(() -> {
-                    try {
-                        Optional.of(newItems).filter(CollectionUtils::isNotEmpty).ifPresent(anytxtToolService::addAllIndexStat);
-                        Optional.of(uptItems).filter(CollectionUtils::isNotEmpty).ifPresent(anytxtToolService::updateAllIndexStatById);
-                        Optional.of(delItems).filter(CollectionUtils::isNotEmpty).ifPresent(anytxtToolService::deleteAllIndexStatByIdIn);
-                        batchChoiceCheckBox.setSelected(false);
-                        this.refreshList();
-                    } finally {
-                        btnList.forEach(btn -> btn.setDisable(false));
-                    }
-                });
+            if (btnType.equals(okBtn)) {
+                anytxtToolService.deleteAllIndexStatByIdIn(indexStatVOList.stream().map(IndexStatVO::getId).collect(Collectors.toList()));
+                this.refreshList();
             }
         });
     }
@@ -308,22 +272,22 @@ public class MainController implements Initializable {
             }
         });
         extTableCol.setCellValueFactory(new PropertyValueFactory<>("ext"));
-        extTableCol.setEditable(true);
+        extTableCol.setEditable(false);
         extTableCol.setOnEditCommit(event -> {
             event.getRowValue().setExt(event.getNewValue());
         });
 
         statTableCol.setCellFactory(TextFieldTableCell.forTableColumn());
         statTableCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getStat().getDisplayName()));
-        statTableCol.setEditable(true);
+        statTableCol.setEditable(false);
 
         totalTableCol.setCellFactory(param -> new TextFieldTableCell<>(new IntegerStringConverter()));
         totalTableCol.setCellValueFactory(new PropertyValueFactory<>("total"));
-        totalTableCol.setEditable(true);
+        totalTableCol.setEditable(false);
 
         ruleTableCol.setCellFactory(TextFieldTableCell.forTableColumn());
         ruleTableCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getRule().getDisplayName()));
-        ruleTableCol.setEditable(true);
+        ruleTableCol.setEditable(false);
 
         optTableCol.setCellFactory(param -> new TableCell<IndexStatVO, String>() {
             @Override
@@ -332,11 +296,16 @@ public class MainController implements Initializable {
                 this.setText(null);
                 this.setGraphic(null);
                 if (!empty) {
-                    Button showDescBtn = new Button("查看规则目录列表");
+                    Button uptBtn = new Button("修改");
+                    uptBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+                        System.out.println("uptBtn");
+                    });
+
+                    Button showDescBtn = new Button("查看详情");
                     showDescBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
                         System.out.println("showDescBtn");
                     });
-                    HBox hBox = new HBox(showDescBtn);
+                    HBox hBox = new HBox(uptBtn, showDescBtn);
                     hBox.setSpacing(10);
                     hBox.setAlignment(Pos.CENTER);
                     this.setGraphic(hBox);

@@ -33,8 +33,7 @@
       <children>
         <TextField fx:id="filterListTextField" onKeyReleased="#filterList" promptText="筛选文件类型"/>
         <Button fx:id="newItemBtn" mnemonicParsing="false" onAction="#newItem" text="新增"/>
-        <Button fx:id="delItemsBtn" mnemonicParsing="false" onAction="#delItems" text="移除"/>
-        <Button fx:id="confirmModBtn" mnemonicParsing="false" onAction="#confirmMod" text="确认修改"/>
+        <Button fx:id="delItemsBtn" mnemonicParsing="false" onAction="#delItems" text="删除"/>
         <Button fx:id="refreshListBtn" mnemonicParsing="false" onAction="#refreshList" text="刷新列表"/>
       </children>
     </HBox>
