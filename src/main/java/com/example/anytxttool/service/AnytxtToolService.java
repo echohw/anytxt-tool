@@ -92,9 +92,7 @@ public class AnytxtToolService {
         Document document = DocumentHelper.parseText(ruleXml);
         Element dataObjElem = (Element) document.selectSingleNode("//dataObj");
         Element ruleTypeElem = dataObjElem.element("m_ruleType");
-        Optional.ofNullable(ruleTypeElem.getTextTrim()).filter(StringUtils::isNotBlank).map(Integer::valueOf).ifPresent(type -> {
-            dataModel.setRuleType(RuleType.find(ruleType -> ruleType.getCoord() == type).orElse(RuleType.ALL));
-        });
+        Optional.ofNullable(ruleTypeElem.getTextTrim()).filter(StringUtils::isNotBlank).map(Integer::valueOf).ifPresent(dataModel::setRuleType);
         Element qslPathsElem = dataObjElem.element("m_qslPaths");
         Element countElem = (Element) qslPathsElem.selectSingleNode("stdList/count");
         Optional.ofNullable(countElem.getTextTrim()).filter(StringUtils::isNotBlank).map(Integer::valueOf).ifPresent(dataModel::setCount);

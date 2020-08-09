@@ -41,4 +41,12 @@ public enum RuleType {
         }
         return Optional.empty();
     }
+
+    public static Optional<RuleType> findByCoord(int coord) {
+        return find(ruleType -> ruleType.getCoord() == coord);
+    }
+
+    public static Optional<RuleType> findByName(String name) {
+        return find(ruleType -> ruleType.getName().equals(name));
+    }
 }

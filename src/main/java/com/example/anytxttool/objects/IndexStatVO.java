@@ -41,9 +41,9 @@ public class IndexStatVO {
 
         id = new SimpleIntegerProperty(indexStat.getId());
         ext = new SimpleStringProperty(indexStat.getExt());
-        stat = new SimpleObjectProperty<>(EntityStat.find(stat -> stat.getCoord() == indexStat.getStat()).orElse(EntityStat.NEW));
+        stat = new SimpleObjectProperty<>(EntityStat.findByCoord(indexStat.getStat()).orElseThrow(() -> new IllegalStateException("错误的数据状态")));
         total = new SimpleIntegerProperty(indexStat.getTotal());
-        rule = new SimpleObjectProperty<>(ruleFtlDataModel.getRuleType());
+        rule = new SimpleObjectProperty<>(RuleType.findByCoord(ruleFtlDataModel.getRuleType()).orElseThrow(() -> new IllegalStateException("错误的索引规则")));
         selected = new SimpleBooleanProperty(false);
     }
 
@@ -119,7 +119,7 @@ public class IndexStatVO {
 
     public void setRule(RuleType rule) {
         this.rule.set(rule);
-        this.ruleFtlDataModel.setRuleType(rule);
+        this.ruleFtlDataModel.setRuleType(rule.getCoord());
     }
 
     public boolean isSelected() {

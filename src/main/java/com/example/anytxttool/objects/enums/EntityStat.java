@@ -43,4 +43,12 @@ public enum EntityStat {
         }
         return Optional.empty();
     }
+
+    public static Optional<EntityStat> findByCoord(int coord) {
+        return find(stat -> stat.getCoord() == coord);
+    }
+
+    public static Optional<EntityStat> findByName(String name) {
+        return find(stat -> stat.getName().equals(name));
+    }
 }
